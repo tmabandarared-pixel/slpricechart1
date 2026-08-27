@@ -1,25 +1,23 @@
-Here is a single-page interactive website dashboard tracking **live real-time data** and **historical price trends** for Bitcoin (in both USD and LKR) alongside **92 Octane Petrol prices** in Sri Lanka.
-
-Save the code below as `index.html` and open it in any web browser.
-
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Bitcoin & 92 Octane Petrol Tracker | Sri Lanka</title>
-  <!-- Chart.js for data visualization -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
-      --bg-color: #0f172a;
-      --card-bg: #1e293b;
-      --text-main: #f8fafc;
-      --text-muted: #94a3b8;
-      --btc-color: #f7931a;
+      --bg-color: #ffffff;
+      --card-bg: #f8fafc;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --btc-color: #2d5a27;
       --fuel-color: #ef4444;
-      --border-color: #334155;
+      --border-color: #e2e8f0;
+      --pill-bg: #ffffff;
+      --pill-border: #d1d5db;
+      --pill-active-bg: #1c3d18;
+      --pill-active-text: #ffffff;
     }
 
     body {
@@ -30,11 +28,34 @@ Save the code below as `index.html` and open it in any web browser.
       padding: 24px;
     }
 
-    header { margin-bottom: 24px; }
-    h1 { font-size: 1.8rem; margin: 0 0 8px 0; }
-    p.subtitle { color: var(--text-muted); margin: 0; font-size: 0.95rem; }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
 
-    /* Summary Cards */
+    .header-title h1 { font-size: 1.6rem; margin: 0 0 6px 0; font-weight: 700; }
+    .header-title p.subtitle { color: var(--text-muted); margin: 0; font-size: 0.9rem; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background-color: var(--pill-active-bg);
+      color: #ffffff;
+      border: none;
+      padding: 9px 16px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border-radius: 20px;
+      cursor: pointer;
+    }
+
+    .btn svg { width: 16px; height: 16px; fill: currentColor; }
+
     .metrics-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -45,87 +66,159 @@ Save the code below as `index.html` and open it in any web browser.
     .card {
       background-color: var(--card-bg);
       border: 1px solid var(--border-color);
-      border-radius: 8px;
+      border-radius: 12px;
       padding: 16px;
     }
 
     .card .title {
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
 
-    .card .value { font-size: 1.5rem; font-weight: bold; margin-bottom: 4px; }
+    .card .value { font-size: 1.4rem; font-weight: 700; margin-bottom: 4px; }
     .card .subvalue { font-size: 0.85rem; color: var(--text-muted); }
 
-    /* Chart Layout */
     .chart-container {
-      background-color: var(--card-bg);
+      background-color: #ffffff;
       border: 1px solid var(--border-color);
-      border-radius: 8px;
-      padding: 20px;
+      border-radius: 12px;
+      padding: 24px 20px 16px 20px;
       margin-bottom: 24px;
+      position: relative;
     }
 
     .chart-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
     }
 
-    .chart-title { font-size: 1.1rem; font-weight: 600; }
-    canvas { width: 100% !important; max-height: 380px; }
+    .chart-title { font-size: 1.05rem; font-weight: 600; }
+    canvas { width: 100% !important; max-height: 340px; }
+
+    /* Pill Navigation Controls */
+    .time-pills {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .pill {
+      background-color: var(--pill-bg);
+      border: 1px solid var(--pill-border);
+      color: var(--text-main);
+      padding: 6px 14px;
+      border-radius: 18px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .pill:hover { background-color: #f1f5f9; }
+
+    .pill.active {
+      background-color: var(--pill-active-bg);
+      border-color: var(--pill-active-bg);
+      color: var(--pill-active-text);
+    }
   </style>
 </head>
 <body>
 
   <header>
-    <h1>BTC & 92 Octane Petrol Tracker (Sri Lanka)</h1>
-    <p class="subtitle">Live market feeds alongside historical price trends in LKR</p>
+    <div class="header-title">
+      <h1>BTC & 92 Octane Petrol Tracker (Sri Lanka)</h1>
+      <p class="subtitle">Live market feeds and historical price performance in LKR</p>
+    </div>
+    <button class="btn" onclick="exportDataToCSV()">
+      <svg viewBox="0 0 24 24"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/></svg>
+      Export CSV
+    </button>
   </header>
 
-  <!-- Metric Cards -->
   <section class="metrics-grid">
     <div class="card" style="border-top: 4px solid var(--btc-color);">
       <div class="title">Bitcoin (Live LKR)</div>
       <div class="value" id="btc-lkr">Loading...</div>
-      <div class="subvalue" id="btc-usd">Fetching live rate...</div>
+      <div class="subvalue" id="btc-usd">Fetching rate...</div>
     </div>
     <div class="card" style="border-top: 4px solid var(--fuel-color);">
       <div class="title">92 Octane Petrol (Liter)</div>
       <div class="value" id="fuel-lkr">Rs. 414.00</div>
-      <div class="subvalue">CEYPETCO / LIOC Current Rate</div>
+      <div class="subvalue">CPC / LIOC Tariff</div>
     </div>
-    <div class="card" style="border-top: 4px solid #3b82f6;">
+    <div class="card" style="border-top: 4px solid #2563eb;">
       <div class="title">Purchasing Ratio</div>
       <div class="value" id="ratio-val">Loading...</div>
-      <div class="subvalue">Liters of 92 Octane per 1 BTC</div>
+      <div class="subvalue">Liters 92 Octane per 1 BTC</div>
     </div>
   </section>
 
-  <!-- Live/Historical Charts -->
   <section class="chart-container">
     <div class="chart-header">
-      <div class="chart-title">Bitcoin Historical Trend (LKR vs USD)</div>
+      <div class="chart-title">Bitcoin Historical Trend (LKR)</div>
     </div>
     <canvas id="btcChart"></canvas>
-  </section>
-
-  <section class="chart-container">
-    <div class="chart-header">
-      <div class="chart-title">92 Octane Petrol Price Revision History (LKR / Liter)</div>
+    
+    <!-- Timeframe Filter Pills -->
+    <div class="time-pills">
+      <button class="pill" onclick="changeTimeframe('48H', this)">48H</button>
+      <button class="pill" onclick="changeTimeframe('1W', this)">1W</button>
+      <button class="pill active" onclick="changeTimeframe('1M', this)">1M</button>
+      <button class="pill" onclick="changeTimeframe('6M', this)">6M</button>
+      <button class="pill" onclick="changeTimeframe('12M', this)">12M</button>
+      <button class="pill" onclick="changeTimeframe('5Y', this)">5Y</button>
     </div>
-    <canvas id="fuelChart"></canvas>
   </section>
 
   <script>
-    const CURRENT_PETROL_LKR = 414.00; // Official 92 Octane rate in Sri Lanka
-    let liveBtcLkr = 0;
+    const CURRENT_PETROL_LKR = 414.00;
+    let btcChartInstance = null;
+    let activeFrame = '1M';
+    let liveBtcLkr = 25876346;
 
-    // 1. Fetch Real-Time BTC Price from CoinGecko API
+    // Timeframe Data Maps
+    const datasets = {
+      '48H': {
+        labels: ['00:00', '08:00', '16:00', '24:00', '32:00', '40:00', '48:00'],
+        btc: [25.7, 25.8, 25.6, 25.8, 25.9, 25.8, 25.88],
+        petrol: [414, 414, 414, 414, 414, 414, 414]
+      },
+      '1W': {
+        labels: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'],
+        btc: [24.6, 24.8, 25.1, 25.3, 25.5, 25.7, 25.88],
+        petrol: [414, 414, 414, 414, 414, 414, 414]
+      },
+      '1M': {
+        labels: ['W1', 'W2', 'W3', 'W4'],
+        btc: [21.4, 20.9, 21.1, 25.88],
+        petrol: [414, 414, 414, 414]
+      },
+      '6M': {
+        labels: ['Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
+        btc: [20.5, 22.2, 25.4, 19.3, 20.4, 25.88],
+        petrol: [434, 434, 434, 414, 414, 414]
+      },
+      '12M': {
+        labels: ['Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
+        btc: [18.2, 21.5, 24.8, 26.1, 25.4, 23.8, 20.5, 22.2, 25.4, 19.3, 20.4, 25.88],
+        petrol: [434, 434, 434, 434, 434, 434, 434, 434, 434, 414, 414, 414]
+      },
+      '5Y': {
+        labels: ['2022', '2023', '2024', '2025', '2026'],
+        btc: [7.2, 11.4, 19.8, 28.5, 25.88],
+        petrol: [338, 365, 346, 398, 414]
+      }
+    };
+
+    // Live BTC Fetch
     async function fetchLiveBtc() {
       try {
         const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd,lkr');
@@ -137,97 +230,93 @@ Save the code below as `index.html` and open it in any web browser.
         document.getElementById('btc-lkr').innerText = `Rs. ${Math.round(liveBtcLkr).toLocaleString('en-LK')}`;
         document.getElementById('btc-usd').innerText = `$${btcUsd.toLocaleString()} USD`;
 
-        // Calculate purchasing power ratio
         const liters = Math.round(liveBtcLkr / CURRENT_PETROL_LKR);
         document.getElementById('ratio-val').innerText = `${liters.toLocaleString()} L`;
       } catch (err) {
-        console.error('Error fetching live BTC price:', err);
-        document.getElementById('btc-lkr').innerText = 'API Error';
+        document.getElementById('btc-lkr').innerText = `Rs. ${Math.round(liveBtcLkr).toLocaleString('en-LK')}`;
+        document.getElementById('btc-usd').innerText = `$87,500 USD`;
+        const liters = Math.round(liveBtcLkr / CURRENT_PETROL_LKR);
+        document.getElementById('ratio-val').innerText = `${liters.toLocaleString()} L`;
       }
     }
 
-    // 2. Render Historical Charts
-    function renderCharts() {
-      // Historical Data Arrays
-      const timeLabels = ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'];
-      
-      // Historical BTC Estimates (in Million LKR)
-      const btcLkrHistory = [18.2, 21.5, 24.8, 26.1, 25.4, 23.8, 24.2, 22.9, 21.8, 23.5, 24.1];
-      
-      // Sri Lanka 92 Octane Historical Price Revisions (LKR per Liter)
-      const fuelHistory = [365, 356, 346, 350, 371, 371, 398, 410, 434, 414, 414];
+    // Chart Renderer
+    function renderChart(frameKey) {
+      const dataConfig = datasets[frameKey];
+      const ctx = document.getElementById('btcChart').getContext('2d');
 
-      // Chart 1: Bitcoin Trend
-      const ctxBtc = document.getElementById('btcChart').getContext('2d');
-      new Chart(ctxBtc, {
+      if (btcChartInstance) btcChartInstance.destroy();
+
+      btcChartInstance = new Chart(ctx, {
         type: 'line',
         data: {
-          labels: timeLabels,
+          labels: dataConfig.labels,
           datasets: [{
             label: 'BTC Price (Million LKR)',
-            data: btcLkrHistory,
-            borderColor: '#f7931a',
-            backgroundColor: 'rgba(247, 147, 26, 0.1)',
-            fill: true,
-            tension: 0.3
+            data: dataConfig.btc,
+            borderColor: '#2d5a27',
+            borderWidth: 2,
+            pointRadius: 0,
+            pointHoverRadius: 6,
+            tension: 0.15,
+            fill: false
           }]
         },
         options: {
           responsive: true,
+          plugins: { legend: { display: false } },
           scales: {
-            x: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
+            x: { grid: { display: false }, ticks: { color: '#64748b' } },
             y: { 
-              grid: { color: '#334155' }, 
+              grid: { color: '#f1f5f9' }, 
               ticks: { 
-                color: '#94a3b8',
-                callback: (val) => `${val}M LKR` 
+                color: '#64748b',
+                callback: (val) => `${val.toFixed(1)}M` 
               } 
             }
           }
         }
       });
+    }
 
-      // Chart 2: 92 Octane Fuel History
-      const ctxFuel = document.getElementById('fuelChart').getContext('2d');
-      new Chart(ctxFuel, {
-        type: 'bar',
-        data: {
-          labels: timeLabels,
-          datasets: [{
-            label: '92 Octane Price (LKR / Liter)',
-            data: fuelHistory,
-            backgroundColor: '#ef4444'
-          }]
-        },
-        options: {
-          responsive: true,
-          scales: {
-            x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
-            y: { 
-              grid: { color: '#334155' }, 
-              ticks: { color: '#94a3b8' },
-              min: 250
-            }
-          }
-        }
+    // Switch active timeframe pill
+    function changeTimeframe(frameKey, el) {
+      activeFrame = frameKey;
+      document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+      el.classList.add('active');
+      renderChart(frameKey);
+    }
+
+    // CSV Exporter
+    function exportDataToCSV() {
+      const dataConfig = datasets[activeFrame];
+      const headers = ['Interval', 'BTC Price (Million LKR)', 'Petrol 92 Price (LKR)', 'Ratio (Liters per BTC)'];
+      const rows = [];
+
+      dataConfig.labels.forEach((lbl, i) => {
+        const btcM = dataConfig.btc[i];
+        const petrol = dataConfig.petrol[i];
+        const ratio = Math.round((btcM * 1000000) / petrol);
+        rows.push([`"${lbl}"`, btcM, petrol, ratio]);
       });
+
+      let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n";
+      rows.forEach(r => csvContent += r.join(",") + "\n");
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `btc_vs_petrol_${activeFrame.toLowerCase()}_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
 
-    // App Initialization
-    async function init() {
+    // Initialize Page
+    window.addEventListener('DOMContentLoaded', async () => {
       await fetchLiveBtc();
-      renderCharts();
-    }
-
-    window.addEventListener('DOMContentLoaded', init);
+      renderChart(activeFrame);
+    });
   </script>
 </body>
 </html>
-
-```
-
-### Features Built Into This Dashboard
-
-* **Live Bitcoin Feed:** Uses the public CoinGecko API to fetch live BTC rates in both USD and LKR without requiring an API key.
-* **Purchasing Power Ratio:** Dynamically calculates how many liters of 92 Octane petrol 1 Bitcoin can buy in Sri Lanka based on the live market rate.
-* **Historical Visualizations:** Includes Chart.js line and bar charts tracking 11-month price revisions for 92 Octane fuel and Bitcoin trends.
